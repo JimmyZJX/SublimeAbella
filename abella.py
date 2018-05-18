@@ -70,7 +70,7 @@ class AbellaWorker(threading.Thread):
         self.communicate("")
 
     def _init_response_view(self):
-        self.response_view.set_syntax_file("Packages/Abella/Abella.tmLanguage")
+        self.response_view.set_syntax_file("Packages/SublimeAbella/Abella.tmLanguage")
         self.response_view.set_scratch(True)
         self.response_view.set_read_only(True)
         name = self.view.name() or os.path.basename(self.view.file_name() or "")
@@ -130,7 +130,7 @@ class AbellaWorker(threading.Thread):
     def nextPos(self):
         text = self.view.substr(sublime.Region(self.pos, self.view.size()))
         # print("nextPos.text = " + text)
-        m = re.match(r"((%.*\n)|(/\*.*\*+/)|(/[^*%]|[^%.]))*\.\s", text)
+        m = re.match(r"((%.*\n)|(/\*.*\*+/)|(/[^*%]|[^%\.]))*\.\s", text)
         if m:
             return (self.pos + m.end())
         else:
@@ -169,6 +169,7 @@ class AbellaWorker(threading.Thread):
 
     def goto(self):
         cursor = self.view.sel()[0].begin()
+        self.buffered_commit = self.response_view.substr(sublime.Region(0, self.response_view.size()))
         if cursor > self.pos:
             nextPos = self.nextPos()
             while nextPos and nextPos - 1 <= cursor and self.next(updateCursor=False):
@@ -201,6 +202,7 @@ class AbellaWorker(threading.Thread):
     def communicate(self, str_input, is_text=True, is_show=False):
         if not is_show:
             self.response_view.run_command("abella_start_working")
+        # print("communicate: " + str_input)
         self.p.stdin.write(str_input + "\n")
         self.p.stdin.flush()
         output = ""
@@ -215,11 +217,9 @@ class AbellaWorker(threading.Thread):
             return (output, None)
 
     def commit(self, msg, head=None, updateCursor=True):
-        self.view.add_regions("Abella", [sublime.Region(self.pos - 1, self.pos)], "meta.coq.proven")
+        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish") #"meta.coq.proven")
         if updateCursor:
-            self.view.sel().subtract(sublime.Region(0, self.pos - 1))
-            if len(self.view.sel()) == 0:
-                self.view.sel().add(sublime.Region(self.pos, self.pos))
+            self.view.run_command("update_cursor", { "pos": self.pos }) # TODO
         # Beautify message
         if msg.endswith(" < "):
             (msgBody, msgHead) = ("\n" + msg).rsplit("\n", 1)
@@ -355,6 +355,12 @@ class AbellaUpdateOutputBufferCommand(sublime_plugin.TextCommand):
         self.view.set_read_only(True)
         # self.view.set_viewport_position(viewport)
         # print("after = " + str(self.view.viewport_position()))
+
+class UpdateCursorCommand(sublime_plugin.TextCommand):
+    def run(self, edit, pos=0):
+        self.view.sel().subtract(sublime.Region(0, pos - 1))
+        if len(self.view.sel()) == 0:
+            self.view.sel().add(sublime.Region(pos, pos))
 
 class AbellaStartWorkingCommand(sublime_plugin.TextCommand):
     def run(self, edit, text=""):
