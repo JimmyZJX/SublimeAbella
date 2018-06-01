@@ -1,0 +1,6 @@
+{
+	"shell_cmd": "abella \"${file}\" -c \"${file_base_name}.thc\" -o \"${file_base_name}.out\"",
+	"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+	"working_dir": "${file_path}",
+	"selector": "source.abella"
+}
