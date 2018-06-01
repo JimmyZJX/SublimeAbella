@@ -264,6 +264,43 @@
             </array>
         </dict>
 
+
+        <dict>
+            <key>applyEndPatternLast</key>
+            <integer>1</integer>
+            <key>begin</key>
+            <string>/\*(?!#)</string>
+            <key>end</key>
+            <string>\*/</string>
+            <key>name</key>
+            <string>comment.block.coq</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>include</key>
+                    <string>#block_comment</string>
+                </dict>
+            </array>
+        </dict>
+
+        <dict>
+            <key>applyEndPatternLast</key>
+            <integer>1</integer>
+            <key>begin</key>
+            <string>%</string>
+            <key>end</key>
+            <string>\n</string>
+            <key>name</key>
+            <string>comment.line.coq</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>include</key>
+                    <string>#block_comment</string>
+                </dict>
+            </array>
+        </dict>
+
     </array>
 
     <key>repository</key>

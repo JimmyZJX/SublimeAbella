@@ -130,7 +130,7 @@ class AbellaWorker(threading.Thread):
     def nextPos(self):
         text = self.view.substr(sublime.Region(self.pos, self.view.size()))
         # print("nextPos.text = " + text)
-        m = re.match(r"((%.*\n)|(/\*.*\*+/)|(/[^*%]|[^%\.]))*\.\s", text)
+        m = re.match(r"(%.*?\n|/\*.*?\*/|/[^*]|[^%/.])*\.\s", text, re.DOTALL)
         if m:
             return (self.pos + m.end())
         else:
@@ -217,7 +217,7 @@ class AbellaWorker(threading.Thread):
             return (output, None)
 
     def commit(self, msg, head=None, updateCursor=True):
-        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish") #"meta.coq.proven")
+        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven") #"")
         if updateCursor:
             self.view.run_command("update_cursor", { "pos": self.pos }) # TODO
         # Beautify message
