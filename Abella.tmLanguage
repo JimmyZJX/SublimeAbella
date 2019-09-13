@@ -170,7 +170,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(into|with|eqn|by|as|using)\b</string>
+            <string>\b(into|with|eqn|by|as|using|to)\b</string>
             <key>comment</key>
             <string>Common Ltac connectors</string>
             <key>name</key>
@@ -188,7 +188,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply)\b</string>
+            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply|applys)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>

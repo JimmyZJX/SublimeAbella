@@ -50,12 +50,13 @@ class AbellaWorker(threading.Thread):
         self.lock.acquire()
 
         self.view = view
+        self.view.lastShowThm = ""
         working_dir = None
         f = self.view.file_name()
         if f is not None:
             working_dir = os.path.dirname(f)
 
-        self.p = Popen(ABELLA_BIN, universal_newlines=True,
+        self.p = Popen(ABELLA_BIN + " 2>1", universal_newlines=True,
                        stdin=PIPE, stdout=PIPE, cwd=working_dir,
                        shell=True, bufsize=0)
         self.view = view
@@ -141,7 +142,7 @@ class AbellaWorker(threading.Thread):
         # print("next.nextPos = " + str(nextPos))
         if nextPos:
             next_fullstop_region = sublime.Region(self.pos, nextPos)
-            # print("region: " + self.view.substr(next_fullstop_region))
+            print("region: " + self.view.substr(next_fullstop_region))
             next_fullstop = next_fullstop_region.b - 1
             next_str = self.view.substr(sublime.Region(self.pos, next_fullstop))
             (out, err) = self.communicate(next_str)
@@ -161,7 +162,15 @@ class AbellaWorker(threading.Thread):
             (out, err) = self.communicate("undo.", is_text=False)
             if not err:
                 self.pos -= len(self.undoStack.pop()[0])
-                self.commit(out, updateCursor=updateCursor)
+
+                # Get last non-empty element
+                lastOutp = ""
+                for i in range(len(self.undoStack.stack)):
+                    if self.undoStack.stack[-i - 1] != ("", ""):
+                        lastOutp = self.undoStack.stack[-i - 1][1]
+                        break
+                # print("=== Output ===\n" + lastOutp)
+                self.commit(out if "\n" in out else lastOutp, updateCursor=updateCursor)
                 return True
             else:
                 self.commit(out, "Undo Failed...", updateCursor=updateCursor)
@@ -408,13 +417,32 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         self.view_id = self.view.id()
         self.list_items = []
+
         for v in self.view.window().views():
             if v.file_name() and v.file_name().endswith(".thm"):
                 self.list_items += [name for (r, name) in v.symbols()]
+
         if self.view.substr(self.view.sel()[0]) in self.list_items:
             self.show_thm(self.view.substr(self.view.sel()[0]))
         else:
-            sublime.active_window().show_quick_panel(self.list_items, self._on_select)
+            applying_thm = self.get_applying_thm()
+            if applying_thm in self.list_items and \
+                    (self.view.lastShowThm != applying_thm or \
+                     self.view.window().find_output_panel('show_thm').window() == None):
+                self.show_thm(applying_thm)
+            else:
+                sublime.active_window().show_quick_panel(self.list_items, self._on_select)
+
+    def get_applying_thm(self):
+        txt = self.view.substr(sublime.Region(0, self.view.sel()[0].end()))
+        lastDot = txt.rfind('.')
+        if lastDot < 0: return ""
+        # print("dot = " + txt[lastDot:])
+        match = re.search(r"(apply|backchain) +(\w+)", txt[lastDot:])
+        if match:
+            # print("match = " + match.group(2))
+            return match.group(2)
+        return ""
 
     def _on_select(self, idx):
         if idx > -1:
@@ -424,5 +452,6 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
     def show_thm(self, thm):
         self.panel = self.view.window().create_output_panel('show_thm')
         self.view.window().run_command('show_panel', { 'panel': 'output.show_thm' })
+        self.view.lastShowThm = thm
         self.panel.run_command('abella_show', { 'thm': thm, 'view_id': self.view_id });
 
