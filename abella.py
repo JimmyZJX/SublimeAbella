@@ -94,7 +94,13 @@ class AbellaWorker(threading.Thread):
         self.send_req(StopMessage)
 
     def _on_stop(self):
+        print("Killing Abella...")
         self.p.terminate()
+        # if os.name == 'nt':
+        # 	subprocess.call(['taskkill', '/F', '/PID', str(self.p.pid)], shell=True)
+        # else:
+        # 	self.p.kill()
+        # print("Killed!")
         self.view.erase_regions("Abella")
 
     def send_req(self, req):
@@ -320,6 +326,9 @@ class AbellaReloadCommand(sublime_plugin.TextCommand):
             known_views[response_view.id()] = response_view
             print(response_view)
             self.view.run_command("abella_kill", {"close_response": False})
+            if worker.is_alive():
+            	print("worker didn't die!")
+            	return
             self.view.run_command("abella", {"response_view": response_view.id()})
         else:
             self.view.run_command("abella_kill")
@@ -330,10 +339,10 @@ class AbellaKillCommand(sublime_plugin.TextCommand):
         worker_key = self.view.id()
         worker = workers.get(worker_key, None)
         if worker:
+            del workers[worker_key]
             worker._do_stop()
-            worker.join(1)
+            worker.join(5)
             if not worker.is_alive():
-                del workers[worker_key]
                 print("killed {}".format(worker))
             else:
                 print("worker didn't die!")
@@ -438,7 +447,7 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
         lastDot = txt.rfind('.')
         if lastDot < 0: return ""
         # print("dot = " + txt[lastDot:])
-        match = re.search(r"(apply|backchain) +(\w+)", txt[lastDot:])
+        match = re.search(r"(applys?|backchain) +(\w+)", txt[lastDot:])
         if match:
             # print("match = " + match.group(2))
             return match.group(2)
