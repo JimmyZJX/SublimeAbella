@@ -25,6 +25,9 @@ GotoMessage = object()
 ShowMessage = collections.namedtuple("ShowMessage", ["thm"])
 # EvalMessage = collections.namedtuple("EvalMessage", ["pos"])
 
+class WorkerContinueException(Exception):
+    pass
+
 abellaWindow = None
 def getAbellaWindow():
     global abellaWindow
@@ -40,25 +43,26 @@ def getAbellaWindow():
         abellaWindow = sublime.active_window()
         return abellaWindow
 
+REAbellaNextDot = re.compile(r"(%.*?\n|/\*.*?\*/|/[^*]|[^%/.])*\.\s", re.DOTALL)
+
 class AbellaWorker(threading.Thread):
 
     def __init__(self, view, response_view=None):
         super().__init__(daemon=True)
-        self.pos = 0
 
-        self.lock = threading.Lock()
-        self.lock.acquire()
+        self.eventReq = threading.Event()
 
         self.view = view
-        self.view.lastShowThm = ""
-        working_dir = None
+        view.lastShowThm = ""
+        if not hasattr(view, 'lastProven'):
+            view.lastProven = view.size() # the last "Proof completed."
+        print("view.lastProven = ", view.lastProven)
+
+        self.working_dir = None
         f = self.view.file_name()
         if f is not None:
-            working_dir = os.path.dirname(f)
+            self.working_dir = os.path.dirname(f)
 
-        self.p = Popen(ABELLA_BIN + " 2>1", universal_newlines=True,
-                       stdin=PIPE, stdout=PIPE, cwd=working_dir,
-                       shell=True, bufsize=0)
         self.view = view
         if response_view:
             self.response_view = known_views[response_view]
@@ -67,8 +71,18 @@ class AbellaWorker(threading.Thread):
             self.response_view = getAbellaWindow().new_file() # self.view.window().new_file()
             self._init_response_view()
 
+        self._init_popen()
+
+    def _init_popen(self):
+        self.p = Popen(ABELLA_BIN, universal_newlines=True,
+                       stdin=PIPE, stdout=PIPE, cwd=self.working_dir,
+                       shell=True, bufsize=0, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+
+        self.AbellaUndo = False
+        self.pos = 0
         self.undoStack = AbellaUndo()
         self.communicate("")
+        self.communicate("Set undo off.")
 
     def _init_response_view(self):
         self.response_view.set_syntax_file("Packages/SublimeAbella/Abella.tmLanguage")
@@ -95,66 +109,75 @@ class AbellaWorker(threading.Thread):
 
     def _on_stop(self):
         print("Killing Abella...")
-        self.p.terminate()
-        # if os.name == 'nt':
-        # 	subprocess.call(['taskkill', '/F', '/PID', str(self.p.pid)], shell=True)
-        # else:
-        # 	self.p.kill()
-        # print("Killed!")
+        try:
+            self.p.terminate()
+        except Exception as e:
+            print(e)
         self.view.erase_regions("Abella")
 
     def send_req(self, req):
         self.request = req
-        if not self.lock.acquire(blocking=False):
-            self.lock.release()
+        self.eventReq.set();
 
     def get_req(self):
-        self.lock.acquire()
+        self.eventReq.wait()
+        self.eventReq.clear()
         return self.request
 
     def run(self):
         while True:
-            req = self.get_req()
-            # print("worker {} got message: {}".format(self, req))
-            if req is StopMessage:
-                print("worker {} got stop message".format(self))
-                self._on_stop()
-                return
-            elif req is NextMessage:
-                self.next()
-            elif req is UndoMessage:
-                self.undo()
-            elif req is GotoMessage:
+            try:
+                req = self.get_req()
+                # print("worker {} got message: {}".format(self, req))
+                if req is StopMessage:
+                    print("worker {} got stop message".format(self))
+                    self._on_stop()
+                    return
+                elif req is NextMessage:
+                    self.next()
+                elif req is UndoMessage:
+                    self.undo()
+                elif req is GotoMessage:
+                    self.goto()
+                elif isinstance(req, ShowMessage):
+                    self.show(req.thm)
+                # elif req is CheckForModificationMessage:
+                #     print("worker {} is checking for modifications...")
+                #     self.check_for_modifications()
+                else:
+                    print("unknown message: ", req)
+            except WorkerContinueException:
+                print("WorkerContinueException: ", self)
                 self.goto()
-            elif isinstance(req, ShowMessage):
-                self.show(req.thm)
-            # elif req is CheckForModificationMessage:
-            #     print("worker {} is checking for modifications...")
-            #     self.check_for_modifications()
-            else:
-                print("unknown message: {}".format(req))
 
-    def nextPos(self):
-        text = self.view.substr(sublime.Region(self.pos, self.view.size()))
+    def nextPos(self, text=None):
+        text = text or self.view.substr(sublime.Region(0, self.view.size()))
         # print("nextPos.text = " + text)
-        m = re.match(r"(%.*?\n|/\*.*?\*/|/[^*]|[^%/.])*\.\s", text, re.DOTALL)
+        m = REAbellaNextDot.match(text, self.pos)
         if m:
-            return (self.pos + m.end())
+            return m.end()
         else:
             return None
 
-    def next(self, updateCursor=True):
-        nextPos = self.nextPos()
+    def next(self, updateCursor=True, nextPos=None, updateRegion=False):
+        nextPos = nextPos or self.nextPos()
         # print("next.nextPos = " + str(nextPos))
         if nextPos:
-            next_fullstop_region = sublime.Region(self.pos, nextPos)
-            print("region: " + self.view.substr(next_fullstop_region))
-            next_fullstop = next_fullstop_region.b - 1
+            # next_fullstop_region = sublime.Region(self.pos, nextPos)
+            # print("region: " + self.view.substr(next_fullstop_region))
+            next_fullstop = nextPos - 1
             next_str = self.view.substr(sublime.Region(self.pos, next_fullstop))
             (out, err) = self.communicate(next_str)
             if not err:
                 self.pos = next_fullstop
-            self.commit(out, updateCursor=updateCursor)
+
+            if out.startswith("Proof completed."):
+                self.view.lastProven = self.pos
+                updateRegion = True
+                # print("Yey! lastProven -> ", self.view.lastProven)
+
+            self.commit(out, updateCursor=updateCursor, updateRegion=updateRegion)
+
             return not err
         else:
             print("Abella - Cannot find match...")
@@ -162,9 +185,6 @@ class AbellaWorker(threading.Thread):
 
     def undo(self, updateCursor=True):
         if self.pos > 0:
-            while self.undoStack.top() == ("", ""):
-                self.communicate("undo.", is_text=False)
-                self.undoStack.pop()
             (out, err) = self.communicate("undo.", is_text=False)
             if not err:
                 self.pos -= len(self.undoStack.pop()[0])
@@ -183,16 +203,27 @@ class AbellaWorker(threading.Thread):
                 return False
 
     def goto(self):
+        lastProven = self.view.lastProven
+
         cursor = self.view.sel()[0].begin()
         self.buffered_commit = self.response_view.substr(sublime.Region(0, self.response_view.size()))
         if cursor > self.pos:
-            nextPos = self.nextPos()
-            while nextPos and nextPos - 1 <= cursor and self.next(updateCursor=False):
-                nextPos = self.nextPos()
+            viewText = self.view.substr(sublime.Region(0, self.view.size()))
+            nextPos = self.nextPos(text=viewText)
+            while nextPos and nextPos - 1 <= cursor and self.next(updateCursor=False, nextPos=nextPos):
+                nextPos = self.nextPos(text=viewText)
                 # print("nextPos = " + str(nextPos))
+                if self.AbellaUndo == False and nextPos > lastProven:
+                    print("nextPos({}) > lastProven({})".format(nextPos, lastProven))
+                    self.communicate("Set undo on.", is_text=False)
+                    self.AbellaUndo = True
         else:
             while cursor < self.pos and self.undo(updateCursor=False):
                 pass
+        if self.AbellaUndo == False:
+            print("Just set undo on back again")
+            self.communicate("Set undo on.", is_text=False)
+            self.AbellaUndo = True
         self.commit_buffer()
 
     def show(self, thm):
@@ -215,6 +246,23 @@ class AbellaWorker(threading.Thread):
                 return False
 
     def communicate(self, str_input, is_text=True, is_show=False):
+        # clean the undoStack
+        while self.undoStack.top() == ("", ""):
+            self.undoStack.pop()
+            self.do_communicate("undo.", is_text=False)
+
+        (out, err) = self.do_communicate(str_input, is_text, is_show)
+        if self.AbellaUndo == False and err is not None:
+            print("Something bad is happening: Abella should quit now")
+            try:
+                self.p.terminate()
+            except Exception as e:
+                print(e)
+            self._init_popen() # resets all the states
+            raise WorkerContinueException() # will call goto
+        return (out, err)
+
+    def do_communicate(self, str_input, is_text=True, is_show=False):
         if not is_show:
             self.response_view.run_command("abella_start_working")
         # print("communicate: " + str_input)
@@ -222,7 +270,12 @@ class AbellaWorker(threading.Thread):
         self.p.stdin.flush()
         output = ""
         while not output.endswith(" < "):
-            output += self.p.stdout.read(1)
+            outChar = self.p.stdout.read(1)
+            if outChar == '':
+                self.p.poll()
+                print("output ends?! " + output + "; pid: " + str(self.p.pid) + "; return code: " + str(self.p.returncode))
+                break
+            output += outChar
         match = re.search(r"(Error: .*)|( error\.)", output)
         if match:
             return (output, match.group(0))
@@ -231,10 +284,20 @@ class AbellaWorker(threading.Thread):
             if is_show: self.undoStack.push("", "")
             return (output, None)
 
-    def commit(self, msg, head=None, updateCursor=True):
-        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven") #"")
+    def commit(self, msg, updateCursor=True, updateRegion=False):
+        if updateRegion or updateCursor:
+            self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
+
         if updateCursor:
             self.view.run_command("update_cursor", { "pos": self.pos }) # TODO
+
+            self.response_update_output(msg)
+            if self.response_view.window().id() != self.view.window().id():
+                self.response_view.window().focus_view(self.response_view)
+        else:
+            self.buffered_commit = msg
+
+    def beautify_msg(self, msg):
         # Beautify message
         if msg.endswith(" < "):
             (msgBody, msgHead) = ("\n" + msg).rsplit("\n", 1)
@@ -242,24 +305,23 @@ class AbellaWorker(threading.Thread):
             msgHead = msgHead[:-3]
             msgHead = "" if msgHead == "Abella" else "Proving Theorem " + msgHead
 
-            if head: msgHead = head
+            # if head: msgHead = head
             msg = msgHead + "\n======\n" + msgBody
-        if updateCursor:
-            self.response_view.run_command("abella_update_output_buffer", {"text": msg})
-            if self.response_view.window().id() != self.view.window().id():
-                self.response_view.window().focus_view(self.response_view)
-        else:
-            self.buffered_commit = msg
+        return msg
+
+    def response_update_output(self, msg):
+        self.response_view.run_command("abella_update_output_buffer", {"text": self.beautify_msg(msg)})
 
     def commit_buffer(self):
-        self.response_view.run_command("abella_update_output_buffer", {"text": self.buffered_commit})
+        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
+        self.response_update_output(self.buffered_commit)
         self.buffered_commit = ""
         if self.response_view.window().id() != self.view.window().id():
             self.response_view.window().focus_view(self.response_view)
 
 class AbellaUndo(object):
     def __init__(self):
-        self.stack = []
+        self.stack = [("#init#","#init#")]
         self.text = ""
 
     def push(self, text, msg):
@@ -283,9 +345,11 @@ class AbellaCommand(sublime_plugin.TextCommand):
         #     return
         worker_key = self.view.id()
         worker = workers.get(worker_key, None)
+        print("AbellaCommand {} got worker {}".format(worker_key, worker))
         if not worker:
             worker = AbellaWorker(self.view, response_view)
             workers[worker_key] = worker
+            # print("AbellaCommand worker created {}".format(worker,))
             worker.start()
             print("spawned worker {} for view {}".format(worker, worker_key))
         worker.send_req(GotoMessage)
