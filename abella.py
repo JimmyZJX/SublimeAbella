@@ -184,7 +184,13 @@ class AbellaWorker(threading.Thread):
             return False
 
     def undo(self, updateCursor=True):
-        if self.pos > 0:
+        # clean the undoStack
+        while self.undoStack.top() == ("", ""):
+            self.undoStack.pop()
+            self.do_communicate("undo.", is_text=False)
+
+        out = "Undo not available!"
+        if not self.undoStack.top()[1].startswith("#") and self.pos > 0:
             (out, err) = self.communicate("undo.", is_text=False)
             if not err:
                 self.pos -= len(self.undoStack.pop()[0])
@@ -198,9 +204,14 @@ class AbellaWorker(threading.Thread):
                 # print("=== Output ===\n" + lastOutp)
                 self.commit(out if "\n" in out else lastOutp, updateCursor=updateCursor)
                 return True
-            else:
-                self.commit(out, "Undo Failed...", updateCursor=updateCursor)
-                return False
+
+        self.commit(out, "Undo Failed...", updateCursor=updateCursor)
+        return False
+
+    def enableAbellaUndo(self):
+        self.communicate("Set undo on.", is_text=False)
+        self.AbellaUndo = True
+        self.undoStack.push("#undo_on", "#undo_on")
 
     def goto(self):
         lastProven = self.view.lastProven
@@ -215,15 +226,13 @@ class AbellaWorker(threading.Thread):
                 # print("nextPos = " + str(nextPos))
                 if self.AbellaUndo == False and nextPos > lastProven:
                     print("nextPos({}) > lastProven({})".format(nextPos, lastProven))
-                    self.communicate("Set undo on.", is_text=False)
-                    self.AbellaUndo = True
+                    self.enableAbellaUndo()
         else:
             while cursor < self.pos and self.undo(updateCursor=False):
                 pass
         if self.AbellaUndo == False:
             print("Just set undo on back again")
-            self.communicate("Set undo on.", is_text=False)
-            self.AbellaUndo = True
+            self.enableAbellaUndo()
         self.commit_buffer()
 
     def show(self, thm):
@@ -284,20 +293,20 @@ class AbellaWorker(threading.Thread):
             if is_show: self.undoStack.push("", "")
             return (output, None)
 
-    def commit(self, msg, updateCursor=True, updateRegion=False):
+    def commit(self, msg, head=None, updateCursor=True, updateRegion=False):
         if updateRegion or updateCursor:
             self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
 
         if updateCursor:
             self.view.run_command("update_cursor", { "pos": self.pos }) # TODO
 
-            self.response_update_output(msg)
+            self.response_update_output(msg, head=head)
             if self.response_view.window().id() != self.view.window().id():
                 self.response_view.window().focus_view(self.response_view)
         else:
             self.buffered_commit = msg
 
-    def beautify_msg(self, msg):
+    def beautify_msg(self, msg, head):
         # Beautify message
         if msg.endswith(" < "):
             (msgBody, msgHead) = ("\n" + msg).rsplit("\n", 1)
@@ -305,12 +314,12 @@ class AbellaWorker(threading.Thread):
             msgHead = msgHead[:-3]
             msgHead = "" if msgHead == "Abella" else "Proving Theorem " + msgHead
 
-            # if head: msgHead = head
+            if head: msgHead = head
             msg = msgHead + "\n======\n" + msgBody
         return msg
 
-    def response_update_output(self, msg):
-        self.response_view.run_command("abella_update_output_buffer", {"text": self.beautify_msg(msg)})
+    def response_update_output(self, msg, head=None):
+        self.response_view.run_command("abella_update_output_buffer", {"text": self.beautify_msg(msg, head)})
 
     def commit_buffer(self):
         self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
