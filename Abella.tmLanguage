@@ -64,6 +64,53 @@
         </dict>
 
         <dict>
+            <key>begin</key>
+            <string>(Split)\s+[a-zA-Z][a-zA-Z0-9_']*\s+(as)</string>
+            <key>end</key>
+            <string>\.</string>
+            <key>beginCaptures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function.theorem.coq</string>
+                </dict>
+                <key>5</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function.theorem.coq</string>
+                </dict>
+            </dict>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>match</key>
+                    <string>([a-zA-Z][a-zA-Z0-9_']*)</string>
+                    <key>captures</key>
+                    <dict>
+                        <key>1</key>
+                        <dict>
+                            <key>name</key>
+                            <string>entity.name.function.theorem.coq</string>
+                        </dict>
+                    </dict>
+                </dict>
+            </array>
+            <key>comment</key>
+            <string>Split as declarations</string>
+        </dict>
+
+        <dict>
             <key>match</key>
             <string>(Define)\s+([a-zA-Z_][a-zA-Z0-9_']*)</string>
             <key>comment</key>
@@ -188,7 +235,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply|applys)\b</string>
+            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply|applys|rename)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
