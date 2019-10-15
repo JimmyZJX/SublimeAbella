@@ -82,7 +82,7 @@ class AbellaWorker(threading.Thread):
         self.pos = 0
         self.undoStack = AbellaUndo()
         self.communicate("")
-        self.communicate("Set undo off.")
+        self.communicate("Set undo off.", is_crucial=True)
 
     def _init_response_view(self):
         self.response_view.set_syntax_file("Packages/SublimeAbella/Abella.tmLanguage")
@@ -254,7 +254,7 @@ class AbellaWorker(threading.Thread):
                 spanel.run_command("edit_panel", {'text': "Show Failed: " + err})
                 return False
 
-    def communicate(self, str_input, is_text=True, is_show=False):
+    def communicate(self, str_input, is_text=True, is_show=False, is_crucial=False):
         # clean the undoStack
         while self.undoStack.top() == ("", ""):
             self.undoStack.pop()
@@ -262,7 +262,14 @@ class AbellaWorker(threading.Thread):
 
         (out, err) = self.do_communicate(str_input, is_text, is_show)
         if self.AbellaUndo == False and err is not None:
-            print("Something bad is happening: Abella should quit now")
+            if is_crucial:
+                sublime.error_message("Crucial Error: <" + err + ">")
+                try:
+                    self.p.terminate()
+                except Exception as e:
+                    print(e)
+                raise Exception("Crucial Error: " + err)
+            print("Something bad <" + err + ">: Abella should quit now")
             try:
                 self.p.terminate()
             except Exception as e:
