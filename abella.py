@@ -78,11 +78,11 @@ class AbellaWorker(threading.Thread):
                        stdin=PIPE, stdout=PIPE, cwd=self.working_dir,
                        shell=True, bufsize=0, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
 
-        self.AbellaUndo = False
+        self.AbellaUndo = True
         self.pos = 0
         self.undoStack = AbellaUndo()
         self.communicate("")
-        self.communicate("Set undo off.")
+        # self.communicate("Set undo off.")
 
     def _init_response_view(self):
         self.response_view.set_syntax_file("Packages/SublimeAbella/Abella.tmLanguage")
