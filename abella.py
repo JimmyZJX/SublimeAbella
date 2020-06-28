@@ -478,10 +478,30 @@ class AbellaViewEventListener(sublime_plugin.EventListener):
     #         worker.send_req(CheckForModificationMessage)
 
     def on_modified(self, view):
+        # fix view for proof view
         if viewPort.get(view.id(), None):
             # print("after = " + str(viewPort[view.id()]))
             view.set_viewport_position(viewPort[view.id()], False)
         viewPort[view.id()] = None
+
+        # dot trigger
+        worker_key = view.id()
+        worker = workers.get(worker_key, None)
+        if worker:
+            region0 = view.sel()[0]
+            if region0.a == region0.b:
+                p = region0.a
+                if p > 1 and view.substr(p - 1) == ".":
+                    provenRegions = view.get_regions("Abella")
+                    if len(provenRegions) > 0:
+                        provenR = provenRegions[0].b
+                        strBetween = view.substr(sublime.Region(provenR, p))
+
+                        m = REAbellaNextDot.match(strBetween)
+                        if not m:
+                            # the dot here is just the next one
+                            view.run_command("abella_goto");
+
 
     def on_close(self, view):
         for view_id, worker in list(workers.items()):

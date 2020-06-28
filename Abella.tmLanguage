@@ -235,7 +235,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply|applys|rename)\b</string>
+            <string>\b(intros|induction|case|assert|split|unfold|exists|left|right|clear|search|backchain|apply|applys|rename|permute)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
