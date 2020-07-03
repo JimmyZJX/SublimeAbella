@@ -1,12 +1,100 @@
-[
-    { "keys": ["ctrl+enter"], "command": "abella" },
-    { "keys": ["ctrl+down"], "command": "abella_next" },
-    { "keys": ["ctrl+up"], "command": "abella_undo" },
-    { "keys": ["ctrl+right"], "command": "abella_goto" },
-    { "keys": ["ctrl+left"], "command": "abella_reload" },
-    { "keys": ["ctrl+shift+enter"], "command": "abella_kill" },
-    {"keys": ["ctrl+;"], "command": "abella_list_show"},
-    {"keys": ["ctrl+7"], "command": "insert_snippet", "args": {"contents": " /\\ "}},
-    {"keys": ["ctrl+\\"], "command": "insert_snippet", "args": {"contents": " \\/ "}},
-    {"keys": ["ctrl+."], "command": "insert_snippet", "args": {"contents": " -> "}}
+[{
+        "keys": ["ctrl+enter"],
+        "command": "abella",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+down"],
+        "command": "abella_next",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+up"],
+        "command": "abella_undo",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+right"],
+        "command": "abella_goto",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+left"],
+        "command": "abella_reload",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+shift+enter"],
+        "command": "abella_kill",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+;"],
+        "command": "abella_list_show",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+7"],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " /\\ "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+\\"],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " \\/ "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["ctrl+."],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " -> "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    }
 ]
