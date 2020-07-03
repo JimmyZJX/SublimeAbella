@@ -40,7 +40,7 @@
             <key>comment</key>
             <string>Vernacular import keywords</string>
             <key>name</key>
-            <string>keyword.control.import.coq</string>
+            <string>keyword.control.import.abella</string>
         </dict>
 
         <dict>
@@ -53,12 +53,12 @@
                 <key>1</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>2</key>
                 <dict>
                     <key>name</key>
-                    <string>entity.name.function.theorem.coq</string>
+                    <string>entity.name.function.theorem.abella</string>
                 </dict>
             </dict>
         </dict>
@@ -73,22 +73,22 @@
                 <key>1</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>2</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>3</key>
                 <dict>
                     <key>name</key>
-                    <string>entity.name.function.theorem.coq</string>
+                    <string>entity.name.function.theorem.abella</string>
                 </dict>
                 <key>5</key>
                 <dict>
                     <key>name</key>
-                    <string>entity.name.function.theorem.coq</string>
+                    <string>entity.name.function.theorem.abella</string>
                 </dict>
             </dict>
             <key>patterns</key>
@@ -101,7 +101,7 @@
                         <key>1</key>
                         <dict>
                             <key>name</key>
-                            <string>entity.name.function.theorem.coq</string>
+                            <string>entity.name.function.theorem.abella</string>
                         </dict>
                     </dict>
                 </dict>
@@ -120,12 +120,12 @@
                 <key>1</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>2</key>
                 <dict>
                     <key>name</key>
-                    <string>entity.name.function.coq</string>
+                    <string>entity.name.function.abella</string>
                 </dict>
             </dict>
         </dict>
@@ -140,12 +140,12 @@
                 <key>1</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>2</key>
                 <dict>
                     <key>name</key>
-                    <string>entity.name.type.coq</string>
+                    <string>entity.name.type.abella</string>
                 </dict>
             </dict>
         </dict>
@@ -160,7 +160,7 @@
                 <key>1</key>
                 <dict>
                     <key>name</key>
-                    <string>keyword.source.coq</string>
+                    <string>keyword.source.abella</string>
                 </dict>
                 <key>2</key>
                 <dict>
@@ -176,7 +176,7 @@
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
-            <string>keyword.source.coq</string>
+            <string>keyword.source.abella</string>
         </dict>
 
         <dict>
@@ -185,7 +185,7 @@
             <key>comment</key>
             <string>Admits are bad</string>
             <key>name</key>
-            <string>invalid.illegal.admit.coq</string>
+            <string>invalid.illegal.admit.abella</string>
         </dict>
 
         <dict>
@@ -194,7 +194,7 @@
             <key>comment</key>
             <string>Operators</string>
             <key>name</key>
-            <string>keyword.operator.coq</string>
+            <string>keyword.operator.abella</string>
         </dict>
 
         <dict>
@@ -203,7 +203,7 @@
             <key>comment</key>
             <string>Type keywords</string>
             <key>name</key>
-            <string>support.type.coq</string>
+            <string>support.type.abella</string>
         </dict>
 
         <dict>
@@ -274,7 +274,7 @@
             <key>match</key>
             <string>\b_\b</string>
             <key>name</key>
-            <string>constant.language.wildcard.coq</string>
+            <string>constant.language.wildcard.abella</string>
         </dict>
 
         <dict>
@@ -285,7 +285,7 @@
                 <key>0</key>
                 <dict>
                     <key>name</key>
-                    <string>punctuation.definition.string.begin.coq</string>
+                    <string>punctuation.definition.string.begin.abella</string>
                 </dict>
             </dict>
             <key>end</key>
@@ -295,18 +295,18 @@
                 <key>0</key>
                 <dict>
                     <key>name</key>
-                    <string>punctuation.definition.string.end.coq</string>
+                    <string>punctuation.definition.string.end.abella</string>
                 </dict>
             </dict>
             <key>name</key>
-            <string>string.quoted.double.coq</string>
+            <string>string.quoted.double.abella</string>
             <key>patterns</key>
             <array>
                 <dict>
                     <key>match</key>
                     <string>\\(x\h{2}|[0-2][0-7]{,2}|3[0-6][0-7]|37[0-7]?|[4-7][0-7]?|.)</string>
                     <key>name</key>
-                    <string>constant.character.escape.coq</string>
+                    <string>constant.character.escape.abella</string>
                 </dict>
             </array>
         </dict>
@@ -320,7 +320,7 @@
             <key>end</key>
             <string>\*/</string>
             <key>name</key>
-            <string>comment.block.coq</string>
+            <string>comment.block.abella</string>
             <key>patterns</key>
             <array>
                 <dict>
@@ -338,7 +338,7 @@
             <key>end</key>
             <string>\n</string>
             <key>name</key>
-            <string>comment.line.coq</string>
+            <string>comment.line.abella</string>
             <key>patterns</key>
             <array>
                 <dict>
@@ -361,7 +361,7 @@
             <key>end</key>
             <string>\*\)</string>
             <key>name</key>
-            <string>comment.block.coq</string>
+            <string>comment.block.abella</string>
             <key>patterns</key>
             <array>
                 <dict>

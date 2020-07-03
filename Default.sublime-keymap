@@ -5,8 +5,8 @@
     { "keys": ["ctrl+right"], "command": "abella_goto" },
     { "keys": ["ctrl+left"], "command": "abella_reload" },
     { "keys": ["ctrl+shift+enter"], "command": "abella_kill" },
+    {"keys": ["ctrl+;"], "command": "abella_list_show"},
     {"keys": ["ctrl+7"], "command": "insert_snippet", "args": {"contents": " /\\ "}},
     {"keys": ["ctrl+\\"], "command": "insert_snippet", "args": {"contents": " \\/ "}},
-    {"keys": ["ctrl+."], "command": "insert_snippet", "args": {"contents": " -> "}},
-    {"keys": ["ctrl+;"], "command": "abella_list_show"}
+    {"keys": ["ctrl+."], "command": "insert_snippet", "args": {"contents": " -> "}}
 ]

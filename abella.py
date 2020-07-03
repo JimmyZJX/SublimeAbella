@@ -15,7 +15,20 @@ from datetime import datetime
 import sublime
 import sublime_plugin
 
-ABELLA_BIN = "abella"
+settings = sublime.load_settings('Abella')
+def get_setting(name, default=None):
+    v = settings.get(name)
+    if v == None:
+        try:
+            return sublime.active_window().active_view().settings().get(name, default)
+        except AttributeError:
+            # No view defined.
+            return default
+    else:
+        return v
+
+def getAbellaBin():
+    return get_setting('abella.exec')
 
 def getCurTimeStr():
     return datetime.now().strftime("%Y-%d-%m, %H:%M:%S")
@@ -83,7 +96,7 @@ class AbellaWorker(threading.Thread):
     def _init_popen(self):
         popenPrefix = "" if os.name == 'nt' else "exec "
 
-        self.p = Popen(popenPrefix + ABELLA_BIN, universal_newlines=True,
+        self.p = Popen(popenPrefix + getAbellaBin(), universal_newlines=True,
                        stdin=PIPE, stdout=PIPE, cwd=self.working_dir,
                        shell=True, bufsize=0, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
 
@@ -92,11 +105,14 @@ class AbellaWorker(threading.Thread):
         self.AbellaUndo = True
         self.pos = 0
         self.undoStack = AbellaUndo()
-        self.communicate("")
+        (out, err) = self.communicate("")
+        if out.find("Abella") < 0:
+            self.view.show_popup("Abella executable not working (in PATH)")
+
         # self.communicate("Set undo off.", is_crucial=True)
 
     def _init_response_view(self):
-        self.response_view.set_syntax_file("Packages/SublimeAbella/Abella.tmLanguage")
+        self.response_view.set_syntax_file("Abella.tmLanguage")
         self.response_view.set_scratch(True)
         self.response_view.set_read_only(True)
         name = self.view.name() or os.path.basename(self.view.file_name() or "")
@@ -348,7 +364,7 @@ class AbellaWorker(threading.Thread):
 
     def commit(self, msg, head=None, updateCursor=True, updateRegion=False):
         if updateRegion or updateCursor:
-            self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
+            self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.abella.proven")
             self.view.erase_regions("Abella_modification")
 
         if updateCursor:
@@ -390,7 +406,7 @@ class AbellaWorker(threading.Thread):
         else:
             self.view.erase_regions("Abella_modification")
 
-        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.coq.proven")
+        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.abella.proven")
         
         if ignoreResponse:
             self.response_view.run_command("abella_start_working", {"text": "Cached proof status"})
@@ -421,9 +437,6 @@ class AbellaUndo(object):
 
 class AbellaCommand(sublime_plugin.TextCommand):
     def run(self, edit, response_view=None):
-        # if "coq" not in self.view.scope_name(0):
-        #     print("not inside a coq buffer")
-        #     return
         worker_key = self.view.id()
         worker = workers.get(worker_key, None)
         print("AbellaCommand {} got worker {}".format(worker_key, worker))
@@ -534,15 +547,6 @@ class AbellaStartWorkingCommand(sublime_plugin.TextCommand):
         self.view.set_read_only(True)
 
 class AbellaViewEventListener(sublime_plugin.EventListener):
-
-    # def on_clone(self, view):
-    #     pass # TODO: what happens when coq response views are duplicated?
-
-    # def on_modified(self, view):
-    #     worker_key = view.id()
-    #     worker = coq_threads.get(worker_key, None)
-    #     if worker:
-    #         worker.send_req(CheckForModificationMessage)
 
     def on_modified(self, view):
         # fix view for proof view

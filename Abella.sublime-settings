@@ -1,6 +1,5 @@
 {
 	// The executable for Abella.
-	// `abella.exe` will be used for windows as default
-	// `which abella` will be used otherwise
-	"abella_exec": ""
+	// abella in PATH (`which abella`) will be used as default
+	"abella.exec": "abella"
 }
