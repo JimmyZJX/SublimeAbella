@@ -112,9 +112,15 @@ class AbellaWorker(threading.Thread):
         self.AbellaUndo = True
         self.pos = 0
         self.undoStack = AbellaUndo()
-        (out, err) = self.communicate("")
+
+        try:
+            (out, err) = self.communicate("")
+        except WorkerQuitException:
+            self.view.show_popup("Abella executable not working!")
+            raise
+
         if out.find("Abella") < 0:
-            self.view.show_popup("Abella executable not working (in PATH)")
+            self.view.show_popup("Abella executable might not be working correctly...")
 
         # self.communicate("Set undo off.", is_crucial=True)
 
