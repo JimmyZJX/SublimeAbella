@@ -46,6 +46,8 @@ ShowMessage = collections.namedtuple("ShowMessage", ["thm"])
 
 class WorkerContinueException(Exception):
     pass
+class WorkerQuitException(Exception):
+    pass
 
 abellaWindow = None
 def getAbellaWindow():
@@ -94,11 +96,16 @@ class AbellaWorker(threading.Thread):
         self._init_popen()
 
     def _init_popen(self):
-        popenPrefix = "" if os.name == 'nt' else "exec "
+        flags = 0
+        popenPrefix = "exec "
+
+        if os.name == 'nt':
+            flags = subprocess.CREATE_NEW_PROCESS_GROUP
+            popenPrefix = ""
 
         self.p = Popen(popenPrefix + getAbellaBin(), universal_newlines=True,
                        stdin=PIPE, stdout=PIPE, cwd=self.working_dir,
-                       shell=True, bufsize=0, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                       shell=True, bufsize=0, creationflags=flags)
 
         print("spawned Abella [" + str(self.p.pid) + "]");
 
@@ -186,6 +193,8 @@ class AbellaWorker(threading.Thread):
             except WorkerContinueException:
                 print("WorkerContinueException: ", self)
                 self.goto()
+            except WorkerQuitException:
+                return
 
     def on_modify(self):
         allText = self.view.substr(sublime.Region(0, self.view.size()))
@@ -352,7 +361,7 @@ class AbellaWorker(threading.Thread):
                 print(getCurTimeStr() +
                     " output ends?! " + output + "; pid: " + str(self.p.pid) +
                     "; return code: " + str(self.p.returncode))
-                break
+                raise WorkerQuitException()
             output += outChar
         match = re.search(r"(Error: .*)|( error\.)", output)
         if match:
