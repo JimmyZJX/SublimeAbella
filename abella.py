@@ -16,6 +16,10 @@ import sublime
 import sublime_plugin
 
 settings = sublime.load_settings('Abella')
+def plugin_loaded():
+    # refresh settings when plugin is ready to use
+    settings = sublime.load_settings('Abella')
+
 def get_setting(name, default=None):
     v = settings.get(name)
     if v == None:
@@ -326,10 +330,10 @@ class AbellaWorker(threading.Thread):
                 if msg.endswith(" < "):
                     (msgBody, msgHead) = ("\n" + msg).rsplit("\n", 1)
                     if len(msgBody) > 0 : msgBody = msgBody[1:]
-                spanel.run_command("edit_panel", {'text': msgBody})
+                spanel.run_command("abella_show_thm_panel", {'text': msgBody})
                 return True
             else:
-                spanel.run_command("edit_panel", {'text': "Show Failed: " + err})
+                spanel.run_command("abella_show_thm_panel", {'text': "Show Failed: " + err})
                 return False
 
     def communicate(self, str_input, is_text=True, is_show=False, is_crucial=False):
@@ -596,7 +600,7 @@ class AbellaViewEventListener(sublime_plugin.EventListener):
             if worker.response_view.id() == view.id():
                 worker.view.run_command("abella_kill")
 
-class EditPanelCommand(sublime_plugin.TextCommand):
+class AbellaShowThmPanelCommand(sublime_plugin.TextCommand):
     def run(self, edit, text=''):
         self.view.insert(edit, self.view.size(), text)
 
