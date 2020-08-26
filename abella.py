@@ -18,6 +18,7 @@ import sublime_plugin
 settings = sublime.load_settings('Abella')
 def plugin_loaded():
     # refresh settings when plugin is ready to use
+    global settings
     settings = sublime.load_settings('Abella')
 
 def get_setting(name, default=None):
