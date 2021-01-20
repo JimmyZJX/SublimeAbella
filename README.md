@@ -37,7 +37,7 @@ Executable
 ===
 The `abella` executable should be in PATH by default.
 
-If you want to change the location, edit your user setting `abella.exec` and point to the currect **file**. The default value is `abella`, and you may change it to `\path\to\abella`.
+If you want to change the location, edit your user setting `abella.exec` and point to the currect **file**. The default value is `abella`, and you may change it to `/path/to/abella`.
 
 Highlighting
 ====
