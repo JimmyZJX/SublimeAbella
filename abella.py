@@ -45,6 +45,7 @@ StopMessage = object()
 NextMessage = object()
 UndoMessage = object()
 GotoMessage = object()
+SearchMessage = object()
 CheckForModificationMessage = object()
 ShowMessage = collections.namedtuple("ShowMessage", ["thm"])
 # EvalMessage = collections.namedtuple("EvalMessage", ["pos"])
@@ -194,6 +195,8 @@ class AbellaWorker(threading.Thread):
                     self.undo()
                 elif req is GotoMessage:
                     self.goto()
+                elif req is SearchMessage:
+                    self.search()
                 elif isinstance(req, ShowMessage):
                     self.show(req.thm)
                 elif req is CheckForModificationMessage:
@@ -209,12 +212,12 @@ class AbellaWorker(threading.Thread):
 
     def on_modify(self):
         allText = self.view.substr(sublime.Region(0, self.view.size()))
-        committed = self.undoStack.text
-        if not allText.startswith(committed):
+        if not allText.startswith(self.undoStack.text):
             print("Abella on_modify: commit change")
             self.send_req(CheckForModificationMessage)
-        # else:
-        #     print("Abella on_modify: good")
+        else:
+            self.update_abella_region()
+            # print("Abella on_modify: good")
 
     def check_for_modifications(self):
         allText = self.view.substr(sublime.Region(0, self.view.size()))
@@ -337,10 +340,21 @@ class AbellaWorker(threading.Thread):
                 spanel.run_command("abella_show_thm_panel", {'text': "Show Failed: " + err})
                 return False
 
-    def communicate(self, str_input, is_text=True, is_show=False, is_crucial=False):
+    def search(self):
+        if self.pos > 0:
+            searchStr = " search."
+            (out, err) = self.communicate(searchStr)
+            if not err:
+                self.view.run_command("abella_search_succeed",
+                    {'pos': self.pos, 'text': searchStr})
+                self.pos += len(searchStr)
+            self.commit(out)
+
+
+    def communicate(self, str_input, is_text=True, is_show=False, is_crucial=False, short_operation=False):
         self.syncUndoStack();
 
-        (out, err) = self.do_communicate(str_input, is_text, is_show)
+        (out, err) = self.do_communicate(str_input, is_text, short_operation=is_show or short_operation)
         if self.AbellaUndo == False and err is not None:
             if is_crucial:
                 sublime.error_message("Crucial Error: <" + err + ">")
@@ -356,12 +370,18 @@ class AbellaWorker(threading.Thread):
                 print(e)
             self._init_popen() # resets all the states
             raise WorkerContinueException() # will call goto
+
+        if is_show and not err:
+            # automatic undo
+            self.communicate(ABELLA_UNDO_COMMAND, is_text=False, short_operation=True)
+
         return (out, err)
 
-    def do_communicate(self, str_input, is_text=True, is_show=False):
-        if not is_show:
+    def do_communicate(self, str_input, is_text=True, short_operation=True):
+        if not short_operation:
             self.response_view.run_command("abella_start_working")
-        # print("communicate: " + str_input)
+        print("communicate: " + str_input)
+
         self.p.stdin.write(str_input + "\n")
         self.p.stdin.flush()
         output = ""
@@ -379,7 +399,6 @@ class AbellaWorker(threading.Thread):
             return (output, match.group(0))
         else:
             if is_text: self.undoStack.push(str_input, output)
-            if is_show: self.undoStack.push("", "")
             return (output, None)
 
     def commit(self, msg, head=None, updateCursor=True, updateRegion=False):
@@ -426,7 +445,7 @@ class AbellaWorker(threading.Thread):
         else:
             self.view.erase_regions("Abella_modification")
 
-        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.abella.proven")
+        self.update_abella_region()
         
         if ignoreResponse:
             self.response_view.run_command("abella_start_working", {"text": "Cached proof status"})
@@ -436,16 +455,21 @@ class AbellaWorker(threading.Thread):
         self.buffered_commit = ""
         self.focusResponseView()
 
+    def update_abella_region(self):
+        self.view.add_regions("Abella", [sublime.Region(0, self.pos)], "region.greenish meta.abella.proven")
+
 class AbellaUndo(object):
     def __init__(self):
         self.stack = [("#init#","#init#")]
         self.text = ""
 
     def push(self, text, msg):
+        print("push:", text)
         self.text += text
         self.stack.append((text, msg))
 
     def pop(self):
+        print("pop")
         (text, msg) = self.stack.pop()
         self.text = self.text[:-len(text)]
         return (text, msg)
@@ -494,6 +518,21 @@ class AbellaGotoCommand(sublime_plugin.TextCommand):
             worker.send_req(GotoMessage)
         else:
             print("No worker found for view {}".format(worker_key))
+
+class AbellaSearchCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        worker_key = self.view.id()
+        worker = workers.get(worker_key, None)
+        if worker:
+            worker.send_req(SearchMessage)
+        else:
+            print("No worker found for view {}".format(worker_key))
+
+class AbellaSearchSucceedCommand(sublime_plugin.TextCommand):
+    def run(self, edit, text, pos):
+        self.view.abella_editing = True
+        self.view.insert(edit, pos, text)
+        self.view.abella_editing = False
 
 class AbellaReloadCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -569,6 +608,8 @@ class AbellaStartWorkingCommand(sublime_plugin.TextCommand):
 class AbellaViewEventListener(sublime_plugin.EventListener):
 
     def on_modified(self, view):
+        if getattr(view, 'abella_editing', False):
+            return
         # fix view for proof view
         if viewPort.get(view.id(), None):
             # print("after = " + str(viewPort[view.id()]))
@@ -618,6 +659,10 @@ class AbellaShowCommand(sublime_plugin.TextCommand):
 class AbellaListShowCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         self.view_id = self.view.id()
+        if not workers.get(self.view_id, None):
+            print("No worker found for view {}".format(self.view_id))
+            return
+
         self.list_items = []
 
         for v in self.view.window().views():

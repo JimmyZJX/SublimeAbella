@@ -15,18 +15,23 @@ git clone git@github.com:JimmyZJX/SublimeAbella.git Abella
 Usage
 ===
 You need to open an Abella script file (*.thm) in ST3, and the following default key bindings should work:
-- Ctrl+Enter: start Abella if necessary, and navigate to cursor.
-- Ctrl+Down: navigate to the next statement.
-- Ctrl+Up: undo last statement
-- Ctrl+Right: navigate to cursor (basically equivalent to Ctrl+Enter)
-- Ctrl+Left: reload Abella, and go to cursor
-- Ctrl+Shift+Enter: kill Abella and reset the state
-- Ctrl+';': show Theorem
+|                  |                                                                    |
+| ---------------- | ------------------------------------------------------------------ |
+| Ctrl+Enter       | start Abella if necessary, and navigate to cursor.                 |
+| Ctrl+Down        | navigate to the next statement.                                    |
+| Ctrl+Up          | undo last statement                                                |
+| Ctrl+Right       | navigate to cursor (basically equivalent to Ctrl+Enter)            |
+| Ctrl+Left        | reload Abella, and go to cursor                                    |
+| Ctrl+Shift+Enter | kill Abella and reset the state                                    |
+| Ctrl+';'         | show Theorem                                                       |
+| Alt+S            | Execute a "search" command, and update the proof script if succeed |
 
-And there are also shortcuts that helps writing proofs:
-- Ctrl+7: (7 stands for "&", and) insert text " /\\ "
-- Ctrl+'\\': ('\\' stands for "|", or) insert text " \\/ "
-- Ctrl+'.': ('.' stands for ">", arrow) insert text " -> "
+And there are also shortcuts that help writing proofs:
+|           |                                                  |
+| --------- | ------------------------------------------------ |
+| Ctrl+7    | (7 stands for "&", and) insert text " /\\ "      |
+| Ctrl+'\\' | ('\\' stands for " \| ", or) insert text " \\/ " |
+| Ctrl+'.'  | ('.' stands for ">", arrow) insert text " -> "   |
 
 Executable
 ===
