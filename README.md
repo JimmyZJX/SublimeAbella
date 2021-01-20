@@ -49,6 +49,8 @@ Highlighting
 
 In order to get nice background highlighting for the proven parts of the file, add the following snippet to your color scheme file.
 
+(If you are not sure what I'm talking about, install the plugin `PackageResourceViewer`, execute the command `PackageResourceViewer: Extract Package` and select `Color Scheme - Default`, then click `Preferences-Browse Packages`, find and edit `Color Scheme - Default/Monokai.sublime-color-scheme`)
+
 For `tmTheme` syntax:
 
 <details><summary>dark themes</summary><p>
