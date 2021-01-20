@@ -17,14 +17,15 @@ Usage
 You need to open an Abella script file (*.thm) in ST3, and the following default key bindings should work:
 |                  |                                                                    |
 | ---------------- | ------------------------------------------------------------------ |
-| Ctrl+Enter       | Start Abella (if necessary) and navigate to cursor.                 |
+| Ctrl+Enter       | Start Abella (if necessary) and navigate to cursor.                |
 | Ctrl+Down        | Navigate to the next statement.                                    |
 | Ctrl+Up          | Undo last statement                                                |
 | Ctrl+Right       | Navigate to cursor (basically equivalent to Ctrl+Enter)            |
 | Ctrl+Left        | Reload Abella, and go to cursor                                    |
 | Ctrl+Shift+Enter | Kill Abella and reset the state                                    |
-| Ctrl+';'         | Show Theorem                                                       |
+| Ctrl+';'         | Lookup and show Theorem                                            |
 | Alt+S            | Execute a "search" command, and update the proof script if succeed |
+| Ctrl+B           | Compile the current file (this is the standard ST "build" command)          |
 
 And there are also shortcuts that help writing proofs:
 |           |                                                  |
