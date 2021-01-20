@@ -33,6 +33,11 @@ And there are also shortcuts that help writing proofs:
 | Ctrl+'\\' | ('\\' stands for " \| ", or) insert text " \\/ " |
 | Ctrl+'.'  | ('.' stands for ">", arrow) insert text " -> "   |
 
+
+### Auto-Next
+When Abella plugin is started, inserting a '.' that ends just the next tactic automatically triggers a navigation to that tactic (same effect as `Ctrl+Enter/Down`).
+
+
 Executable
 ===
 The `abella` executable should be in PATH by default.
