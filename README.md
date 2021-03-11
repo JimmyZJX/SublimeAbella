@@ -34,6 +34,7 @@ And there are also shortcuts that help writing proofs:
 | Ctrl+'\\' | ('\\' stands for " \| ", or) insert text " \\/ " |
 | Ctrl+'.'  | ('.' stands for ">", arrow) insert text " -> "   |
 
+Notice that on OSX, the `ctrl` key is replaced by `cmd`.
 
 ### Auto-Next
 When Abella plugin is started, inserting a '.' that ends just the next tactic automatically triggers a navigation to that tactic (same effect as `Ctrl+Enter/Down`).
@@ -44,6 +45,7 @@ Executable
 The `abella` executable should be in PATH by default.
 
 If you want to change the location, edit your user setting `abella.exec` and point to the currect **file**. The default value is `abella`, and you may change it to `/path/to/abella`.
+The preference file can be found at [Preferences - Package Settings - Abella].
 
 Highlighting
 ====

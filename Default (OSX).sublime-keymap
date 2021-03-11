@@ -1,0 +1,109 @@
+[{
+        "keys": ["cmd+enter"],
+        "command": "abella",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+down"],
+        "command": "abella_next",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+up"],
+        "command": "abella_undo",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+right"],
+        "command": "abella_goto",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+left"],
+        "command": "abella_reload",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+shift+enter"],
+        "command": "abella_kill",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+;"],
+        "command": "abella_list_show",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["alt+s"],
+        "command": "abella_search",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+7"],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " /\\ "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+\\"],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " \\/ "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
+        "keys": ["cmd+."],
+        "command": "insert_snippet",
+        "args": {
+            "contents": " -> "
+        },
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    }
+]
