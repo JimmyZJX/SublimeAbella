@@ -35,6 +35,12 @@ def get_setting(name, default=None):
 def getAbellaBin():
     return get_setting('abella.exec')
 
+VIEW_MODE_WINDOW = 'window'
+VIEW_MODE_PANEL = 'panel'
+
+def getViewMode():
+    return get_setting('proof_view_mode', VIEW_MODE_PANEL)
+
 def getCurTimeStr():
     return datetime.now().strftime("%Y-%d-%m, %H:%M:%S")
 
@@ -54,6 +60,8 @@ class WorkerContinueException(Exception):
     pass
 class WorkerQuitException(Exception):
     pass
+
+abellaProofView = None
 
 abellaWindow = None
 def getAbellaWindow():
@@ -96,7 +104,6 @@ class AbellaWorker(threading.Thread):
             self.response_view = known_views[response_view]
             del known_views[response_view]
         else:
-            self.response_view = getAbellaWindow().new_file() # self.view.window().new_file()
             self._init_response_view()
 
         self._init_popen()
@@ -131,23 +138,34 @@ class AbellaWorker(threading.Thread):
         # self.communicate("Set undo off.", is_crucial=True)
 
     def _init_response_view(self):
+        global abellaProofView
+
+        if getViewMode() == VIEW_MODE_WINDOW:
+            self.response_view = getAbellaWindow().new_file() # self.view.window().new_file()
+        else:
+            if abellaProofView:
+                self.response_view = abellaProofView
+            else:
+                abellaProofView = self.response_view = self.view.window().new_file()
+                window = self.view.window()
+                ngroups = window.num_groups()
+                if ngroups == 1:
+                    window.run_command("new_pane")
+                else:
+                    group = window.num_groups() - 1
+                    if window.get_view_index(self.view)[0] == group:
+                        group -= 1
+                    window.set_view_index(self.response_view, group, 0)
+                    print("View moved to group #" + str(group) + " | " + str(window.get_view_index(self.view)[0]) + " | " + str(ngroups))
+                window.focus_view(self.view)
+
         self.response_view.set_syntax_file("Abella.tmLanguage")
         self.response_view.set_scratch(True)
         self.response_view.set_read_only(True)
         name = self.view.name() or os.path.basename(self.view.file_name() or "")
-        title = "*** Abella for {} ***".format(name) if name else "*** Abella ***"
-        self.response_view.set_name(title)
+        self.response_title = "*** Abella for {} ***".format(name) if name else "*** Abella ***"
+        self.response_view.set_name(self.response_title)
 
-        # window = self.view.window()
-        # ngroups = window.num_groups()
-        # if ngroups == 1:
-        #     window.run_command("new_pane")
-        # else:
-        #     group = window.num_groups() - 1
-        #     if window.get_view_index(self.view)[1] == group:
-        #         group -= 1
-        #     window.set_view_index(self.response_view, group, 0)
-        # window.focus_view(self.view)
 
     def _do_stop(self):
         # self.p.communicate(".\nQuit.\n")
@@ -433,6 +451,7 @@ class AbellaWorker(threading.Thread):
             window.focus_view(self.response_view)
 
     def response_update_output(self, msg, head=None):
+        self.response_view.set_name(self.response_title)
         self.response_view.run_command("abella_update_output_buffer", {"text": self.beautify_msg(msg, head)})
 
     def commit_buffer(self, ignoreResponse=False):
@@ -484,13 +503,14 @@ class AbellaCommand(sublime_plugin.TextCommand):
         worker_key = self.view.id()
         worker = workers.get(worker_key, None)
         print("AbellaCommand {} got worker {}".format(worker_key, worker))
-        if not worker:
-            worker = AbellaWorker(self.view, response_view)
-            workers[worker_key] = worker
-            # print("AbellaCommand worker created {}".format(worker,))
-            worker.start()
-            print("spawned worker {} for view {}".format(worker, worker_key))
-        worker.send_req(GotoMessage)
+        if self.view.file_name():
+            if not worker:
+                worker = AbellaWorker(self.view, response_view)
+                workers[worker_key] = worker
+                # print("AbellaCommand worker created {}".format(worker,))
+                worker.start()
+                print("spawned worker {} for view {}".format(worker, worker_key))
+            worker.send_req(GotoMessage)
 
 class AbellaNextCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -568,7 +588,7 @@ class AbellaKillCommand(sublime_plugin.TextCommand):
                 # clean up the response view if it still exists
                 response_view = worker.response_view
                 window = response_view.window()
-                if window is not None:
+                if window is not None and abellaProofView != response_view:
                     window.focus_view(response_view)
                     window.run_command("close")
         else:

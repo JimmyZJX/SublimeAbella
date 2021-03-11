@@ -1,5 +1,9 @@
 {
 	// The executable for Abella.
 	// abella in PATH (`which abella`) will be used as default
-	"abella.exec": "abella"
+	"abella.exec": "abella",
+	// Mode for proof view:
+	//   `panel`: split the window and display proof status to the right panel
+	//   `window`: display proof status in a new window
+	"proof_view_mode": "panel",
 }
