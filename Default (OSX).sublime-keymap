@@ -1,5 +1,5 @@
 [{
-        "keys": ["cmd+enter"],
+        "keys": ["super+enter"],
         "command": "abella",
         "context": [{
             "key": "selector",
@@ -8,7 +8,7 @@
         }]
     },
     {
-        "keys": ["cmd+down"],
+        "keys": ["super+down"],
         "command": "abella_next",
         "context": [{
             "key": "selector",
@@ -17,7 +17,7 @@
         }]
     },
     {
-        "keys": ["cmd+up"],
+        "keys": ["super+up"],
         "command": "abella_undo",
         "context": [{
             "key": "selector",
@@ -26,7 +26,7 @@
         }]
     },
     {
-        "keys": ["cmd+right"],
+        "keys": ["super+right"],
         "command": "abella_goto",
         "context": [{
             "key": "selector",
@@ -35,7 +35,7 @@
         }]
     },
     {
-        "keys": ["cmd+left"],
+        "keys": ["super+left"],
         "command": "abella_reload",
         "context": [{
             "key": "selector",
@@ -44,7 +44,7 @@
         }]
     },
     {
-        "keys": ["cmd+shift+enter"],
+        "keys": ["super+shift+enter"],
         "command": "abella_kill",
         "context": [{
             "key": "selector",
@@ -53,7 +53,7 @@
         }]
     },
     {
-        "keys": ["cmd+;"],
+        "keys": ["super+;"],
         "command": "abella_list_show",
         "context": [{
             "key": "selector",
@@ -71,7 +71,7 @@
         }]
     },
     {
-        "keys": ["cmd+7"],
+        "keys": ["super+7"],
         "command": "insert_snippet",
         "args": {
             "contents": " /\\ "
@@ -83,7 +83,7 @@
         }]
     },
     {
-        "keys": ["cmd+\\"],
+        "keys": ["super+\\"],
         "command": "insert_snippet",
         "args": {
             "contents": " \\/ "
@@ -95,7 +95,7 @@
         }]
     },
     {
-        "keys": ["cmd+."],
+        "keys": ["super+."],
         "command": "insert_snippet",
         "args": {
             "contents": " -> "

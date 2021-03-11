@@ -588,9 +588,12 @@ class AbellaKillCommand(sublime_plugin.TextCommand):
                 # clean up the response view if it still exists
                 response_view = worker.response_view
                 window = response_view.window()
-                if window is not None and abellaProofView != response_view:
-                    window.focus_view(response_view)
-                    window.run_command("close")
+                if window is not None:
+                    if abellaProofView == response_view:
+                        response_view.run_command("abella_update_output_buffer", {"text": "Bye.\n======\n"})
+                    else:
+                        window.focus_view(response_view)
+                        window.run_command("close")
         else:
             print("no worker to kill")
             self.view.erase_regions("Abella")
