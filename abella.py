@@ -143,7 +143,8 @@ class AbellaWorker(threading.Thread):
         if getViewMode() == VIEW_MODE_WINDOW:
             self.response_view = getAbellaWindow().new_file() # self.view.window().new_file()
         else:
-            if abellaProofView:
+            if abellaProofView and abellaProofView.window():
+                print("Reusing abellaProofView: " + str(abellaProofView.id()) + " | " + str(abellaProofView.window().id()))
                 self.response_view = abellaProofView
             else:
                 abellaProofView = self.response_view = self.view.window().new_file()
@@ -398,7 +399,7 @@ class AbellaWorker(threading.Thread):
     def do_communicate(self, str_input, is_text=True, short_operation=True):
         if not short_operation:
             self.response_view.run_command("abella_start_working")
-        print("communicate: " + str_input)
+        # print("communicate: " + str_input)
 
         self.p.stdin.write(str_input + "\n")
         self.p.stdin.flush()
@@ -483,12 +484,12 @@ class AbellaUndo(object):
         self.text = ""
 
     def push(self, text, msg):
-        print("push:", text)
+        # print("push:", text)
         self.text += text
         self.stack.append((text, msg))
 
     def pop(self):
-        print("pop")
+        # print("pop")
         (text, msg) = self.stack.pop()
         self.text = self.text[:-len(text)]
         return (text, msg)
@@ -498,55 +499,55 @@ class AbellaUndo(object):
         # self.text = self.text[:-len(text)]
         return (text, msg)
 
+def spawnAbellaWorker(view, response_view=None):
+    worker_key = view.id()
+    worker = AbellaWorker(view, response_view)
+    workers[worker_key] = worker
+    # print("AbellaCommand worker created {}".format(worker,))
+    worker.start()
+    print("spawned worker {} for view {}".format(worker, worker_key))
+    return worker
+
+def getAbellaWorker(view):
+    worker_key = view.id()
+    return workers.get(worker_key, None)
+
 class AbellaCommand(sublime_plugin.TextCommand):
     def run(self, edit, response_view=None):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
-        print("AbellaCommand {} got worker {}".format(worker_key, worker))
         if self.view.file_name():
-            if not worker:
-                worker = AbellaWorker(self.view, response_view)
-                workers[worker_key] = worker
-                # print("AbellaCommand worker created {}".format(worker,))
-                worker.start()
-                print("spawned worker {} for view {}".format(worker, worker_key))
+            worker = getAbellaWorker(self.view) or spawnAbellaWorker(self.view, response_view)
+            print("AbellaCommand {} got worker {}".format(self.view.id(), worker))
             worker.send_req(GotoMessage)
 
 class AbellaNextCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
-        if worker:
+        if self.view.file_name():
+            worker = getAbellaWorker(self.view) or spawnAbellaWorker(self.view)
             worker.send_req(NextMessage)
-        else:
-            print("No worker found for view {}".format(worker_key))
 
 class AbellaUndoCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
+        worker = getAbellaWorker(self.view)
         if worker:
             worker.send_req(UndoMessage)
         else:
-            print("No worker found for view {}".format(worker_key))
+            print("No worker found for view {}".format(self.view.id()))
 
 class AbellaGotoCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
+        worker = getAbellaWorker(self.view)
         if worker:
             worker.send_req(GotoMessage)
         else:
-            print("No worker found for view {}".format(worker_key))
+            print("No worker found for view {}".format(self.view.id()))
 
 class AbellaSearchCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
+        worker = getAbellaWorker(self.view)
         if worker:
             worker.send_req(SearchMessage)
         else:
-            print("No worker found for view {}".format(worker_key))
+            print("No worker found for view {}".format(self.view.id()))
 
 class AbellaSearchSucceedCommand(sublime_plugin.TextCommand):
     def run(self, edit, text, pos):
@@ -556,16 +557,15 @@ class AbellaSearchSucceedCommand(sublime_plugin.TextCommand):
 
 class AbellaReloadCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker_key = self.view.id()
-        worker = workers.get(worker_key, None)
+        worker = getAbellaWorker(self.view)
         if worker:
             response_view = worker.response_view
             known_views[response_view.id()] = response_view
             print(response_view)
             self.view.run_command("abella_kill", {"close_response": False})
             if worker.is_alive():
-            	print(getCurTimeStr() + " [reload] worker didn't die!")
-            	return
+                print(getCurTimeStr() + " [reload] worker didn't die!")
+                return
             self.view.run_command("abella", {"response_view": response_view.id()})
         else:
             self.view.run_command("abella_kill")
@@ -620,6 +620,7 @@ class UpdateCursorCommand(sublime_plugin.TextCommand):
         self.view.sel().subtract(sublime.Region(0, pos - 1))
         if len(self.view.sel()) == 0:
             self.view.sel().add(sublime.Region(pos, pos))
+        self.view.show(pos, show_surrounds=False)
 
 class AbellaStartWorkingCommand(sublime_plugin.TextCommand):
     def run(self, edit, text=None):
@@ -640,8 +641,7 @@ class AbellaViewEventListener(sublime_plugin.EventListener):
         viewPort[view.id()] = None
 
         # dot trigger
-        worker_key = view.id()
-        worker = workers.get(worker_key, None)
+        worker = getAbellaWorker(view)
         if worker:
             region0 = view.sel()[0]
             if region0.a == region0.b:
@@ -672,12 +672,11 @@ class AbellaShowThmPanelCommand(sublime_plugin.TextCommand):
 class AbellaShowCommand(sublime_plugin.TextCommand):
     def run(self, edit, thm=None, view_id=-1):
         if thm and view_id >= 0:
-            worker_key = view_id
-            worker = workers.get(worker_key, None)
+            worker = getAbellaWorker(self.view)
             if worker:
                 worker.send_req(ShowMessage(thm=thm))
             else:
-                print("No worker found for view {}".format(worker_key))
+                print("No worker found for view {}".format(self.view.id()))
 
 class AbellaListShowCommand(sublime_plugin.TextCommand):
     def run(self, edit):
