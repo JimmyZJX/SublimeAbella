@@ -106,6 +106,10 @@ class AbellaWorker(threading.Thread):
         else:
             self._init_response_view()
 
+        name = self.view.name() or os.path.basename(self.view.file_name() or "")
+        self.response_title = "*** Abella for {} ***".format(name) if name else "*** Abella ***"
+        self.response_view.set_name(self.response_title)
+
         self._init_popen()
 
     def _init_popen(self):
@@ -163,9 +167,6 @@ class AbellaWorker(threading.Thread):
         self.response_view.set_syntax_file("Abella.tmLanguage")
         self.response_view.set_scratch(True)
         self.response_view.set_read_only(True)
-        name = self.view.name() or os.path.basename(self.view.file_name() or "")
-        self.response_title = "*** Abella for {} ***".format(name) if name else "*** Abella ***"
-        self.response_view.set_name(self.response_title)
 
 
     def _do_stop(self):
@@ -669,20 +670,11 @@ class AbellaShowThmPanelCommand(sublime_plugin.TextCommand):
     def run(self, edit, text=''):
         self.view.insert(edit, self.view.size(), text)
 
-class AbellaShowCommand(sublime_plugin.TextCommand):
-    def run(self, edit, thm=None, view_id=-1):
-        if thm and view_id >= 0:
-            worker = getAbellaWorker(self.view)
-            if worker:
-                worker.send_req(ShowMessage(thm=thm))
-            else:
-                print("No worker found for view {}".format(self.view.id()))
-
 class AbellaListShowCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        self.view_id = self.view.id()
-        if not workers.get(self.view_id, None):
-            print("No worker found for view {}".format(self.view_id))
+        self.worker = getAbellaWorker(self.view)
+        if not self.worker:
+            print("AbellaListShowCommand: No worker found for view {}".format(self.view_id))
             return
 
         self.list_items = []
@@ -722,5 +714,5 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
         self.panel = self.view.window().create_output_panel('show_thm')
         self.view.window().run_command('show_panel', { 'panel': 'output.show_thm' })
         self.view.lastShowThm = thm
-        self.panel.run_command('abella_show', { 'thm': thm, 'view_id': self.view_id });
+        self.worker.send_req(ShowMessage(thm=thm))
 
