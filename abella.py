@@ -51,6 +51,7 @@ StopMessage = object()
 NextMessage = object()
 UndoMessage = object()
 GotoMessage = object()
+GotoEndMessage = object()
 SearchMessage = object()
 CheckForModificationMessage = object()
 ShowMessage = collections.namedtuple("ShowMessage", ["thm"])
@@ -215,6 +216,8 @@ class AbellaWorker(threading.Thread):
                     self.undo()
                 elif req is GotoMessage:
                     self.goto()
+                elif req is GotoEndMessage:
+                    self.gotoEnd()
                 elif req is SearchMessage:
                     self.search()
                 elif isinstance(req, ShowMessage):
@@ -318,6 +321,9 @@ class AbellaWorker(threading.Thread):
         self.communicate("Set undo on.", is_text=False)
         self.AbellaUndo = True
         self.undoStack.push("#undo_on", "#undo_on")
+
+    def gotoEnd(self):
+        self.goto(cursor=self.view.size())
 
     def goto(self, cursor=None, ignoreResponse=False):
         lastProven = self.view.lastProven
@@ -541,6 +547,12 @@ class AbellaGotoCommand(sublime_plugin.TextCommand):
             worker.send_req(GotoMessage)
         else:
             print("No worker found for view {}".format(self.view.id()))
+
+class AbellaGotoEndCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        if self.view.file_name():
+            worker = getAbellaWorker(self.view) or spawnAbellaWorker(self.view)
+            worker.send_req(GotoEndMessage)
 
 class AbellaSearchCommand(sublime_plugin.TextCommand):
     def run(self, edit):

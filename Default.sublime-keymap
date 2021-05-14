@@ -44,6 +44,15 @@
         }]
     },
     {
+        "keys": ["ctrl+shift+down"],
+        "command": "abella_goto_end",
+        "context": [{
+            "key": "selector",
+            "operator": "equal",
+            "operand": "source.abella"
+        }]
+    },
+    {
         "keys": ["ctrl+shift+enter"],
         "command": "abella_kill",
         "context": [{
