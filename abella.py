@@ -776,7 +776,7 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
 
     def show_thm(self, thm):
         self.panel = self.view.window().create_output_panel('show_thm')
+        self.panel.set_syntax_file("Abella.tmLanguage")
         self.view.window().run_command('show_panel', { 'panel': 'output.show_thm' })
         self.view.lastShowThm = thm
         self.worker.send_req(ShowMessage(thm=thm))
-
