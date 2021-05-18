@@ -80,6 +80,7 @@ def getAbellaWindow():
         return abellaWindow
 
 REAbellaNextDot = re.compile(r"(%.*?\n|/\*.*?\*/|/[^*]|[^%/.])*\.\s", re.DOTALL)
+REAbellaListTheorems = re.compile(r'ListTheorems:\[([\S,]*)\]');
 ABELLA_UNDO_COMMAND = "#back."
 
 class AbellaWorker(threading.Thread):
@@ -112,6 +113,9 @@ class AbellaWorker(threading.Thread):
         self.response_view.set_name(self.response_title)
 
         self._init_popen()
+
+        self.DisableListTheorems = False
+        self.abellaListThm = []
 
     def _init_popen(self):
         flags = 0
@@ -176,7 +180,7 @@ class AbellaWorker(threading.Thread):
 
         if os.name == 'nt':
             pKill = Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid),
-                stdin=PIPE, stdout=PIPE, shell=True)
+                stdin=PIPE, stderr=PIPE, stdout=PIPE, shell=True)
         else:
             self.p.kill()
 
@@ -227,10 +231,13 @@ class AbellaWorker(threading.Thread):
                     self.check_for_modifications()
                 else:
                     print("unknown message: ", req)
+                
+                self.updateListThm()
             except WorkerContinueException:
                 print("WorkerContinueException: ", self)
                 self.goto()
             except WorkerQuitException:
+                showWorkingOnProofView(self.response_view, "Abella quit (Unexpectedly)")
                 return
 
     def on_modify(self):
@@ -367,6 +374,21 @@ class AbellaWorker(threading.Thread):
             else:
                 spanel.run_command("abella_show_thm_panel", {'text': "Show Failed: " + err})
                 return False
+
+    def updateListThm(self):
+        if self.DisableListTheorems: return
+        (out, err) = self.communicate("ListTheorems.", is_text=False, is_show=True)
+        if not err:
+            # print("AbellaListTheorems raw: " + out)
+            m = REAbellaListTheorems.match(out)
+            if m:
+                # print("AbellaListTheorems: " + m.group(1))
+                self.abellaListThm = m.group(1).split(",")
+                return
+            else:
+                print("AbellaListTheorems failed: " + out)
+        # failed
+        self.DisableListTheorems = True
 
     def search(self):
         if self.pos > 0:
@@ -653,10 +675,17 @@ def showWorkingOnProofView(view, text=None):
         view.run_command("abella_start_working", {"text": text})
 
 
+def isAbellaOrProofView(view):
+    if view.file_name() and view.file_name().endswith(".thm"):
+        return True
+    if view.name() and view.name().endswith("***"):
+        return True
+    return False
+
 class AbellaViewEventListener(sublime_plugin.EventListener):
 
     def on_modified(self, view):
-        if not (view.name().endswith(".thm") or view.name().endswith("***")):
+        if not isAbellaOrProofView(view):
             return
 
         if getattr(view, 'abella_editing', False):
@@ -697,6 +726,8 @@ class AbellaShowThmPanelCommand(sublime_plugin.TextCommand):
     def run(self, edit, text=''):
         self.view.insert(edit, self.view.size(), text)
 
+REAbellaShowRegion = re.compile(r"(applys?|backchain) +(\w+)")
+
 class AbellaListShowCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         self.worker = getAbellaWorker(self.view, "Show")
@@ -704,11 +735,11 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
             print("AbellaListShowCommand: No worker found for view {}".format(self.view_id))
             return
 
-        self.list_items = []
-
-        for v in self.view.window().views():
-            if v.file_name() and v.file_name().endswith(".thm"):
-                self.list_items += [name for (r, name) in v.symbols()]
+        self.list_items = self.worker.abellaListThm
+        if not self.list_items:
+            for v in self.view.window().views():
+                if v.file_name() and v.file_name().endswith(".thm"):
+                    self.list_items += [name for (r, name) in v.symbols()]
 
         if self.view.substr(self.view.sel()[0]) in self.list_items:
             self.show_thm(self.view.substr(self.view.sel()[0]))
@@ -722,11 +753,17 @@ class AbellaListShowCommand(sublime_plugin.TextCommand):
                 sublime.active_window().show_quick_panel(self.list_items, self._on_select)
 
     def get_applying_thm(self):
-        txt = self.view.substr(sublime.Region(0, self.view.sel()[0].end()))
+        pointer = self.view.sel()[0].end()
+        if self.view.substr(sublime.Region(pointer, pointer) == "."): pointer -= 1 # pointer just after a dot
+        txt = self.view.substr(sublime.Region(0, pointer))
         lastDot = txt.rfind('.')
         if lastDot < 0: return ""
-        # print("dot = " + txt[lastDot:])
-        match = re.search(r"(applys?|backchain) +(\w+)", txt[lastDot:])
+
+        beginPoint = lastDot + 1
+        endPoint = self.view.find(r'\.', pointer).end()
+        regionStr = self.view.substr(sublime.Region(beginPoint, endPoint))
+        # print("dot region = ", beginPoint, endPoint, regionStr)
+        match = REAbellaShowRegion.search(regionStr)
         if match:
             # print("match = " + match.group(2))
             return match.group(2)
