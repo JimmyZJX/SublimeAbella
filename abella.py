@@ -231,7 +231,7 @@ class AbellaWorker(threading.Thread):
                     self.check_for_modifications()
                 else:
                     print("unknown message: ", req)
-                
+
                 self.updateListThm()
             except WorkerContinueException:
                 print("WorkerContinueException: ", self)
@@ -492,12 +492,12 @@ class AbellaWorker(threading.Thread):
             if len(provenRegions) > 0:
                 provenR = provenRegions[0].b
                 reg_mod = sublime.Region(self.pos, provenR)
-                self.view.add_regions("Abella_modification", [reg_mod], "region.yellowish")
+                self.view.add_regions("Abella_modification", [reg_mod], "region.yellowish meta.abella.modified")
         else:
             self.view.erase_regions("Abella_modification")
 
         self.update_abella_region()
-        
+
         if ignoreResponse:
             showWorkingOnProofView(self.response_view, "Cached proof status")
         else:
