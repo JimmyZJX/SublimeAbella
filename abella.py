@@ -582,7 +582,7 @@ class AbellaGotoEndCommand(sublime_plugin.TextCommand):
 
 class AbellaSearchCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        worker = getAbellaWorker(self.view)
+        worker = getAbellaWorker(self.view, "AutoSearch")
         if worker:
             worker.send_req(SearchMessage)
         else:
