@@ -79,7 +79,7 @@ def getAbellaWindow():
         abellaWindow = sublime.active_window()
         return abellaWindow
 
-REAbellaNextDot = re.compile(r"(%.*?\n|/\*.*?\*/|/[^*]|[^%/.])*\.\s", re.DOTALL)
+REAbellaNextDot = re.compile(r"(%[^\n]*\n|/\*([^*]|\*[^/])*\*/|/[^*.]|[^%/.])*\.\s", re.DOTALL)
 REAbellaListTheorems = re.compile(r'ListTheorems:\[([\S,]*)\]');
 ABELLA_UNDO_COMMAND = "#back."
 
@@ -265,7 +265,7 @@ class AbellaWorker(threading.Thread):
 
     def nextPos(self, text=None):
         text = text or self.view.substr(sublime.Region(0, self.view.size()))
-        # print("nextPos.text = " + text)
+        # print("nextPos.text = [[[" + text[self.pos:] + "]]]")
         m = REAbellaNextDot.match(text, self.pos)
         if m:
             return m.end()
