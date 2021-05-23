@@ -21,6 +21,10 @@ def plugin_loaded():
     global settings
     settings = sublime.load_settings('Abella')
 
+def plugin_unloaded():
+    for view_id, worker in list(workers.items()):
+        worker.view.run_command("abella_kill")
+
 def get_setting(name, default=None):
     v = settings.get(name)
     if v == None:
@@ -65,6 +69,13 @@ class WorkerQuitException(Exception):
 abellaProofView = None
 
 abellaWindow = None
+
+def getAbellaView(views):
+    for view in views:
+        if view.name().startswith("*** Abella"):
+            return view
+    return None
+
 def getAbellaWindow():
     global abellaWindow
     if abellaWindow and abellaWindow.id() in map(lambda w: w.id(), sublime.windows()):
@@ -156,18 +167,20 @@ class AbellaWorker(threading.Thread):
                 print("Reusing abellaProofView: " + str(abellaProofView.id()) + " | " + str(abellaProofView.window().id()))
                 self.response_view = abellaProofView
             else:
-                abellaProofView = self.response_view = self.view.window().new_file()
-                window = self.view.window()
-                ngroups = window.num_groups()
-                if ngroups == 1:
-                    window.run_command("new_pane")
-                else:
-                    group = window.num_groups() - 1
-                    if window.get_view_index(self.view)[0] == group:
-                        group -= 1
-                    window.set_view_index(self.response_view, group, 0)
-                    print("View moved to group #" + str(group) + " | " + str(window.get_view_index(self.view)[0]) + " | " + str(ngroups))
-                window.focus_view(self.view)
+                abellaProofView = self.response_view = getAbellaView(self.view.window().views_in_group(1))
+                if not abellaProofView:
+                    abellaProofView = self.response_view = self.view.window().new_file()
+                    window = self.view.window()
+                    ngroups = window.num_groups()
+                    if ngroups == 1:
+                        window.run_command("new_pane")
+                    else:
+                        group = window.num_groups() - 1
+                        if window.get_view_index(self.view)[0] == group:
+                            group -= 1
+                        window.set_view_index(self.response_view, group, 0)
+                        print("View moved to group #" + str(group) + " | " + str(window.get_view_index(self.view)[0]) + " | " + str(ngroups))
+                    window.focus_view(self.view)
 
         self.response_view.set_syntax_file("Abella.tmLanguage")
         self.response_view.set_scratch(True)
